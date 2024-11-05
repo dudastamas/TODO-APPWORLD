@@ -1,85 +1,183 @@
-const content = document.querySelector('#content');
+const content = document.querySelector("#content");
 
-// const description = document.querySelector('#description');
-const saveButton = document.querySelector('.save');
+let TODOS = [];
 
-let TODOS = [
-  // {
-  //   id: '1',
-  //   priority: 'Fontos',
-  //   date: '2024.10.01',
-  //   description: 'Adj hozzá css-t',
-  //   sign: 'F',
-  // },
-  // {
-  //   id: '2',
-  //   priority: 'Nem fontos',
-  //   date: '2025.11.01',
-  //   description: 'Nézd át a kosár oldalt',
-  //   sign: 'N',
-  // },
-  // {
-  //   id: '3',
-  //   priority: 'Átlagos',
-  //   date: '2026.18.09',
-  //   description: 'Nem reszponzív az oldal',
-  //   sign: 'A',
-  // },
-];
 function uuidv4() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
     const r = (Math.random() * 16) | 0,
-      v = c == 'x' ? r : (r & 0x3) | 0x8;
+      v = c == "x" ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
 }
 
-//****Új feladat hozzáadása ****
-saveButton.addEventListener('click', (e) => {
-  e.preventDefault();
-  const description = document.querySelector('#description').value;
-  const priority = document.querySelector('#priority').value;
-  const dateInput = document.querySelector('#date').value;
-  const formattedDate = new Date(dateInput).toLocaleString('hu-HU');
+function createModal() {
+  const modalHTML = `
+    <div class="modal fade" id="todoModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalLabel">Feladat</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="newTodoForm">
+              <div class="mb-3">
+                <label for="priority" class="form-label">Prioritás:</label>
+                <select class="form-select" id="priority">
+                  <option selected>Válaszd ki a prioritást</option>
+                  <option value="fontos">Fontos</option>
+                  <option value="Nem fontos">Nem fontos</option>
+                  <option value="Átlagos">Átlagos</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="date" class="form-label">Dátum:</label>
+                <input type="datetime-local" class="form-control" id="date">
+              </div>
+              <div class="mb-3">
+                <label for="description" class="form-label">Leírás:</label>
+                <textarea class="form-control" id="description"></textarea>
+              </div>
+              <button type="button" class="btn btn-primary" id="saveNewTodoButton">Mentés</button>
+            </form>
+            <form id="editTodoForm" style="display:none;">
+              <div class="mb-3">
+                <label for="editPriority" class="form-label">Prioritás:</label>
+                <select class="form-select" id="editPriority">
+                  <option selected>Válaszd ki a prioritást</option>
+                  <option value="fontos">Fontos</option>
+                  <option value="Nem fontos">Nem fontos</option>
+                  <option value="Átlagos">Átlagos</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="editDate" class="form-label">Dátum:</label>
+                <input type="datetime-local" class="form-control" id="editDate">
+              </div>
+              <div class="mb-3">
+                <label for="editDescription" class="form-label">Leírás:</label>
+                <textarea class="form-control" id="editDescription"></textarea>
+              </div>
+              <button type="button" class="btn btn-primary" id="saveEditTodoButton">Mentés</button>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Mégse</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
 
-  let newItem = {
+  content.insertAdjacentHTML("beforeend", modalHTML);
+}
+
+createModal();
+
+const todoModal = new bootstrap.Modal(document.getElementById("todoModal"));
+
+document.getElementById("saveNewTodoButton").onclick = addTodo;
+document.getElementById("saveEditTodoButton").onclick = (e) => saveEdit(e);
+
+function newTodo() {
+  // Reset the new todo form if it exists
+  const newTodoForm = document.getElementById("newTodoForm");
+  if (newTodoForm) {
+    newTodoForm.reset();
+  }
+  // Hide edit form and show new todo form
+  const editTodoForm = document.getElementById("editTodoForm");
+  if (editTodoForm) {
+    editTodoForm.style.display = "none";
+  }
+  if (newTodoForm) {
+    newTodoForm.style.display = "block";
+  }
+  todoModal.show();
+}
+
+function addTodo() {
+  const description = document.getElementById("description").value;
+  const priority = document.getElementById("priority").value;
+  const date = new Date(document.getElementById("date").value).toLocaleString(
+    "hu-HU"
+  );
+  const newItem = {
     id: uuidv4(),
     priority: priority,
-    date: formattedDate,
+    date: date,
     description: description,
     sign: priority[0].toUpperCase(),
   };
-
   TODOS = [...TODOS, newItem];
   tasksRender();
-  document.querySelector('#description').value = '';
-  document.querySelector('#priority').value = '';
-  document.querySelector('#date').value = '';
-});
+  todoModal.hide();
+}
 
-//****Task-ok törlése****/
+function editItem(id) {
+  const itemToEdit = TODOS.find((todo) => todo.id === id);
+  if (itemToEdit) {
+    document.getElementById("editPriority").value = itemToEdit.priority;
+    document.getElementById("editDate").value = new Date(itemToEdit.date)
+      .toISOString()
+      .slice(0, 16);
+    document.getElementById("editDescription").value = itemToEdit.description;
+
+    const newTodoForm = document.getElementById("newTodoForm");
+    const editTodoForm = document.getElementById("editTodoForm");
+
+    if (newTodoForm) {
+      newTodoForm.style.display = "none";
+    }
+    if (editTodoForm) {
+      editTodoForm.style.display = "block";
+    }
+
+    todoModal.show();
+
+    // Save edit
+    saveEdit = (e) => {
+      e.preventDefault();
+      const updatedItem = {
+        id: itemToEdit.id,
+        priority: document.getElementById("editPriority").value,
+        date: new Date(
+          document.getElementById("editDate").value
+        ).toLocaleString("hu-HU"),
+        description: document.getElementById("editDescription").value,
+        sign: itemToEdit.priority[0].toUpperCase(),
+      };
+
+      TODOS = TODOS.map((todo) => (todo.id === id ? updatedItem : todo));
+      tasksRender();
+      todoModal.hide();
+    };
+  }
+}
+
+// Task-ok törlése
 function deleteItem(id) {
   TODOS = TODOS.filter((item) => item.id !== id);
   tasksRender();
 }
 
-//***Task-ok megjelenítése****/
-function tasksRender() {
-  content.innerHTML =
-    // *****Fejléc*****
-    `<div class="container">
-        <div class="row p-3">
-          <div class="col-10">
-            <h3>Teendők Listája</h3>
-          </div>
-          <div class="col-2 d-flex justify-content-end">
-            <button class="btn btn-primary rounded-pill">+Új feladat</button>
-          </div>
-        </div>
-      </div>`;
+function headRender() {
+  content.innerHTML = `<div class="container">
+    <div class="row p-3">
+      <div class="col-10">
+        <h3>Teendők Listája</h3>
+      </div>
+      <div class="col-2 d-flex justify-content-end">
+        <button class="btn btn-primary rounded-pill" onclick="newTodo()">+Új feladat</button>
+      </div>
+    </div>
+  </div>`;
+}
 
-  //***Fejléc vége */
-  //***Tartalom kezdete */
+headRender();
+tasksRender();
+
+// Task-ok megjelenítése
+function tasksRender() {
   const contentItems = TODOS.map((todo) => {
     return `<div class="container mt-3">
         <div class="row">
@@ -96,15 +194,12 @@ function tasksRender() {
             </div>
           </div>
           <div class="col-2 d-flex gap-3 justify-content-end">
-            <button class="btn btn-danger border rounded-pill px-4 py-2" onclick="deleteItem('${todo.id}')">
-              D
-            </button>
-            <button class="btn btn-primary border rounded-pill px-4 py-2">
-              E
-            </button>
-          </div>`;
+            <button class="btn btn-danger border rounded-pill px-4 py-2" onclick="deleteItem('${todo.id}')">D</button>
+            <button class="btn btn-primary border rounded-pill px-4 py-2" onclick="editItem('${todo.id}')">E</button>
+          </div>
+        </div>
+      </div>`;
   });
-  content.innerHTML += contentItems.join('');
-  //***Tartalom vége */
+  headRender();
+  content.innerHTML += contentItems.join("");
 }
-tasksRender();
