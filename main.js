@@ -25,7 +25,7 @@ function createModal() {
                 <label for="priority" class="form-label">Prioritás:</label>
                 <select class="form-select" id="priority">
                   <option selected>Válaszd ki a prioritást</option>
-                  <option value="fontos">Fontos</option>
+                  <option value="Fontos">Fontos</option>
                   <option value="Nem fontos">Nem fontos</option>
                   <option value="Átlagos">Átlagos</option>
                 </select>
@@ -45,7 +45,7 @@ function createModal() {
                 <label for="editPriority" class="form-label">Prioritás:</label>
                 <select class="form-select" id="editPriority">
                   <option selected>Válaszd ki a prioritást</option>
-                  <option value="fontos">Fontos</option>
+                  <option value="Fontos">Fontos</option>
                   <option value="Nem fontos">Nem fontos</option>
                   <option value="Átlagos">Átlagos</option>
                 </select>
@@ -106,7 +106,7 @@ function addTodo() {
     priority: priority,
     date: date,
     description: description,
-    sign: priority[0].toUpperCase(),
+    sign: priority[0]
   };
   TODOS = [...TODOS, newItem];
   tasksRender();
@@ -144,7 +144,8 @@ function editItem(id) {
           document.getElementById("editDate").value
         ).toLocaleString("hu-HU"),
         description: document.getElementById("editDescription").value,
-        sign: itemToEdit.priority[0].toUpperCase(),
+        sign: document.getElementById("editPriority").value[0],
+        
       };
 
       TODOS = TODOS.map((todo) => (todo.id === id ? updatedItem : todo));
@@ -179,11 +180,16 @@ tasksRender();
 // Task-ok megjelenítése
 function tasksRender() {
   const contentItems = TODOS.map((todo) => {
+    const colorClass = todo.sign === 'F'
+    ? 'bg-danger'
+    : todo.sign === 'N'
+    ? 'bg-primary'
+    : 'bg-secondary';
     return `<div class="container mt-3">
         <div class="row">
           <div class="col-10 d-flex align-itmes-center">
             <div>
-              <h5 class="mx-2 px-3 py-2 bg-danger border rounded-pill">${todo.sign}</h5>
+              <h5 class="mx-2 px-3 py-2 ${colorClass} border rounded-pill">${todo.sign}</h5>
             </div>
             <div>
               <h5 class="m-0">${todo.description}</h5>
