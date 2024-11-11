@@ -10,9 +10,27 @@ function uuidv4() {
   });
 }
 
+// A localStorage-ba mentés függvénye
+// - localStorage.setItem(): Adatok mentése a localStorage-ba
+// - Első paraméter ('todos'): Ez a kulcs, amin tárolni fogjuk az adatokat
+// - JSON.stringify(): A JavaScript objektumot (TODOS tömb) átalakítja szöveggé,
+//   mivel a localStorage csak szöveget tud tárolni
+function saveToLocalStorage() {
+  localStorage.setItem("todos", JSON.stringify(TODOS));
+}
+
+// Adatok betöltése a localStorage-ból
+// - localStorage.getItem(): Kiolvasás a localStorage-ból a 'todos' kulcs alapján
+// - JSON.parse(): A localStorage-ban tárolt szöveget visszaalakítja JavaScript objektummá
+// - Ha nincs még adat a storage-ban (null), akkor üres tömböt használunk
+function loadFromLocalStorage() {
+  const saveTodos = localStorage.getItem("todos");
+  TODOS = saveTodos ? JSON.parse(saveTodos) : [];
+}
+
 function createModal() {
   const modalHTML = `
-    <div class="modal fade" id="todoModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+    <div class="modal fade" id="todoModal" tabindex="-1" >
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
@@ -106,9 +124,10 @@ function addTodo() {
     priority: priority,
     date: date,
     description: description,
-    sign: priority[0]
+    sign: priority[0],
   };
   TODOS = [...TODOS, newItem];
+  saveToLocalStorage();
   tasksRender();
   todoModal.hide();
 }
@@ -117,9 +136,10 @@ function editItem(id) {
   const itemToEdit = TODOS.find((todo) => todo.id === id);
   if (itemToEdit) {
     document.getElementById("editPriority").value = itemToEdit.priority;
-    document.getElementById("editDate").value = new Date(itemToEdit.date)
-      .toISOString()
-      .slice(0, 16);
+    const date = new Date(itemToEdit.date);
+    const offset = date.getTimezoneOffset();
+    date.setMinutes(date.getMinutes() - offset);
+    document.getElementById("editDate").value = date.toISOString().slice(0, 16);
     document.getElementById("editDescription").value = itemToEdit.description;
 
     const newTodoForm = document.getElementById("newTodoForm");
@@ -135,7 +155,7 @@ function editItem(id) {
     todoModal.show();
 
     // Save edit
-    saveEdit = (e) => {
+    document.getElementById("saveEditTodoButton").onclick = function (e) {
       e.preventDefault();
       const updatedItem = {
         id: itemToEdit.id,
@@ -145,10 +165,9 @@ function editItem(id) {
         ).toLocaleString("hu-HU"),
         description: document.getElementById("editDescription").value,
         sign: document.getElementById("editPriority").value[0],
-        
       };
-
-      TODOS = TODOS.map((todo) => (todo.id === id ? updatedItem : todo));
+      TODOS = TODOS.map((item) => (item.id === id ? updatedItem : item));
+      saveToLocalStorage();
       tasksRender();
       todoModal.hide();
     };
@@ -158,6 +177,7 @@ function editItem(id) {
 // Task-ok törlése
 function deleteItem(id) {
   TODOS = TODOS.filter((item) => item.id !== id);
+  saveToLocalStorage();
   tasksRender();
 }
 
@@ -173,18 +193,19 @@ function headRender() {
     </div>
   </div>`;
 }
-
+loadFromLocalStorage();
 headRender();
 tasksRender();
 
 // Task-ok megjelenítése
 function tasksRender() {
   const contentItems = TODOS.map((todo) => {
-    const colorClass = todo.sign === 'F'
-    ? 'bg-danger'
-    : todo.sign === 'N'
-    ? 'bg-primary'
-    : 'bg-secondary';
+    const colorClass =
+      todo.sign === "F"
+        ? "bg-danger"
+        : todo.sign === "N"
+        ? "bg-primary"
+        : "bg-secondary";
     return `<div class="container mt-3">
         <div class="row">
           <div class="col-10 d-flex align-itmes-center">
@@ -206,6 +227,7 @@ function tasksRender() {
         </div>
       </div>`;
   });
+
   headRender();
   content.innerHTML += contentItems.join("");
 }
